@@ -1,0 +1,44 @@
+import ccxt
+import pandas as pd
+
+# Define trading parameters
+symbol = 'BTC/USDT'
+interval = '1m'
+stop_loss = 0.05
+take_profit = 0.1
+
+# Initialize Binance API
+exchange = ccxt.binance({
+    'apiKey': 'YOUR_API_KEY',
+    'apiSecret': 'YOUR_API_SECRET',
+})
+
+# Define trading strategy
+def trading_strategy(data):
+    # Calculate moving averages
+    short_ma = data['close'].rolling(window=50).mean()
+    long_ma = data['close'].rolling(window=200).mean()
+    
+    # Generate signals
+    if short_ma > long_ma:
+        return 'BUY'
+    elif short_ma < long_ma:
+        return 'SELL'
+    else:
+        return 'HOLD'
+
+# Fetch historical data
+data = exchange.fetch_ohlcv(symbol, timeframe=interval)
+
+# Convert data to Pandas DataFrame
+df = pd.DataFrame(data)
+
+# Apply trading strategy
+signals = df.apply(trading_strategy, axis=1)
+
+# Execute trades
+for signal in signals:
+    if signal == 'BUY':
+        exchange.place_market_buy_order(symbol, 0.1)
+    elif signal == 'SELL':
+        exchange.place_market_sell_order(symbol, 0.1)
